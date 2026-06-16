@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: airflow-custom-auth
+data:
+  __init__.py: |-
+{{ .Files.Get "files/auth/__init__.py" | nindent 4 }}
+  azure_auth.py: |-
+{{ .Files.Get "files/auth/azure_auth.py" | nindent 4 }}

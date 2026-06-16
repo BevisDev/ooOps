@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Airflow Alert</title>
+</head>
+
+<body style="margin:0;padding:0;background-color:#eef2f8;font-family:Arial,Helvetica,sans-serif;color:#101828;">
+
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#eef2f8;">
+    <tr>
+      <td align="center" style="padding:24px 12px;">
+
+        <!-- Main Card -->
+        <table role="presentation"
+               width="680"
+               cellspacing="0"
+               cellpadding="0"
+               border="0"
+               style="width:680px;max-width:680px;background-color:#ffffff;border:1px solid #e4e7ec;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#d92d20;padding:28px 28px 24px 28px;color:#ffffff;">
+
+              <h1 style="
+                margin:0;
+                font-size:24px;
+                line-height:32px;
+                font-weight:bold;
+                color:#ffffff;
+              ">
+                Airflow Task Alert
+              </h1>
+
+              <p style="
+                margin:10px 0 0 0;
+                font-size:14px;
+                line-height:22px;
+                color:#fef3f2;
+              ">
+                A task needs attention in the Airflow production environment.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding:24px 28px 8px 28px;">
+
+              <!-- Summary -->
+              <table role="presentation"
+                     width="100%"
+                     cellspacing="0"
+                     cellpadding="0"
+                     border="0"
+                     style="
+                        background-color:#fff5f5;
+                        border:1px solid #fecdca;
+                        margin-bottom:20px;
+                     ">
+                <tr>
+                  <td style="
+                    padding:14px 16px;
+                    font-size:14px;
+                    line-height:22px;
+                    color:#7a271a;
+                  ">
+                    Task
+                    <strong>{{ ti.dag_id }}.{{ ti.task_id }}</strong>
+                    đã chuyển sang trạng thái
+                    <strong>{{ ti.state.name }}</strong>
+                    tại lần chạy
+                    <strong>{{ try_number }}/{{ max_tries + 1 }}</strong>.
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Details -->
+              <table role="presentation"
+                     width="100%"
+                     cellspacing="0"
+                     cellpadding="0"
+                     border="0"
+                     style="border-collapse:collapse;">
+
+                <tr>
+                  <td style="padding:12px 0;border-bottom:1px solid #f2f4f7;width:150px;font-size:13px;font-weight:bold;color:#667085;">
+                    Team
+                  </td>
+                  <td style="padding:12px 0;border-bottom:1px solid #f2f4f7;font-size:14px;color:#101828;">
+                    <strong>{{ team_name | default('unknown') }}</strong>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:12px 0;border-bottom:1px solid #f2f4f7;font-size:13px;font-weight:bold;color:#667085;">
+                    Status
+                  </td>
+                  <td style="padding:12px 0;border-bottom:1px solid #f2f4f7;">
+                    <span style="
+                      display:inline-block;
+                      padding:5px 12px;
+                      background-color:#fee4e2;
+                      color:#b42318;
+                      font-size:11px;
+                      font-weight:bold;
+                      text-transform:uppercase;
+                    ">
+                      {{ ti.state.name }}
+                    </span>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:12px 0;border-bottom:1px solid #f2f4f7;font-size:13px;font-weight:bold;color:#667085;">
+                    DAG
+                  </td>
+                  <td style="padding:12px 0;border-bottom:1px solid #f2f4f7;font-size:14px;">
+                    <strong>{{ ti.dag_id }}</strong>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:12px 0;border-bottom:1px solid #f2f4f7;font-size:13px;font-weight:bold;color:#667085;">
+                    Task
+                  </td>
+                  <td style="padding:12px 0;border-bottom:1px solid #f2f4f7;font-size:14px;">
+                    <strong>{{ ti.task_id }}</strong>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:12px 0;border-bottom:1px solid #f2f4f7;font-size:13px;font-weight:bold;color:#667085;">
+                    Run ID
+                  </td>
+                  <td style="
+                    padding:12px 0;
+                    border-bottom:1px solid #f2f4f7;
+                    font-size:12px;
+                    font-family:Consolas,monospace;
+                    color:#344054;
+                    word-break:break-all;
+                  ">
+                    {{ run_id }}
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:12px 0;border-bottom:1px solid #f2f4f7;font-size:13px;font-weight:bold;color:#667085;">
+                    Execution Time
+                  </td>
+                  <td style="padding:12px 0;border-bottom:1px solid #f2f4f7;font-size:14px;">
+                    {{ ti.start_date.in_timezone("Asia/Ho_Chi_Minh").strftime("%Y-%m-%d %H:%M:%S %Z") }}
+                  </td>
+                </tr>
+
+              </table>
+
+              <!-- Actions -->
+              <table role="presentation"
+                     cellspacing="0"
+                     cellpadding="0"
+                     border="0"
+                     style="margin-top:24px;margin-bottom:24px;">
+
+                <tr>
+                  <td bgcolor="#175cd3" style="padding:0;">
+
+                    <a href="{{ ti.log_url }}"
+                       style="
+                        display:inline-block;
+                        padding:12px 18px;
+                        font-size:14px;
+                        font-weight:bold;
+                        color:#ffffff;
+                        text-decoration:none;
+                        font-family:Arial,Helvetica,sans-serif;
+                       ">
+                      View Task Log
+                    </a>
+
+                  </td>
+                </tr>
+
+              </table>
+
+              <!-- Exception -->
+              <h2 style="
+                margin:0 0 10px 0;
+                font-size:15px;
+                font-weight:bold;
+                color:#101828;
+              ">
+                Exception
+              </h2>
+
+              <table role="presentation"
+                     width="100%"
+                     cellspacing="0"
+                     cellpadding="0"
+                     border="0"
+                     style="
+                        background-color:#f4f4f5;
+                        border:1px solid #d0d5dd;
+                        margin-bottom:24px;
+                     ">
+                <tr>
+                  <td style="
+                    padding:16px 18px;
+                    font-family:Consolas,monospace;
+                    font-size:12px;
+                    line-height:20px;
+                    color:#111827;
+                    white-space:pre-wrap;
+                    word-break:break-word;
+                  ">
+                    {{ exception }}
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="
+              padding:18px 28px 24px 28px;
+              background-color:#f9fafb;
+              border-top:1px solid #eaecf0;
+              font-size:12px;
+              line-height:20px;
+              color:#667085;
+            ">
+              Email được tạo tự động bởi Airflow.
+              <br>
+              Phát triển và vận hành bởi phòng ban
+              <strong>MIS — VietCredit.</strong>
+            </td>
+          </tr>
+
+        </table>
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>

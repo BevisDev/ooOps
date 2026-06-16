@@ -26,7 +26,7 @@
 # This is important because in $local mode, the scheduler assumes the role of the worker
 {{- $persistence := or .Values.workers.celery.persistence.enabled (and (not (has .Values.workers.celery.persistence.enabled (list true false))) .Values.workers.persistence.enabled) }}
 {{- $stateful := and $local $persistence }}
-# We can skip DAGs mounts on scheduler if dagProcessor is enabled, except with $local mode
+# We can skip Dags mounts on scheduler if dagProcessor is enabled, except with $local mode
 {{- $dagProcessorEnabled := .Values.dagProcessor.enabled }}
 {{- if eq $dagProcessorEnabled nil}}
   {{ $dagProcessorEnabled = ternary true false (semverCompare ">=3.0.0" .Values.airflowVersion) }}
@@ -54,7 +54,7 @@ metadata:
     release: {{ .Release.Name }}
     chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
     heritage: {{ .Release.Service }}
-    executor: {{ .Values.executor | replace "," "-" | trunc 63 | trimSuffix "-" | trimSuffix ":" | trimSuffix "_" | trimSuffix "." | quote }}
+    executor: {{ .Values.executor | replace "," "-" | replace ":" "-" | trunc 63 | trimSuffix "-" | trimSuffix ":" | trimSuffix "_" | trimSuffix "." | quote }}
     {{- with .Values.labels }}
       {{- toYaml . | nindent 4 }}
     {{- end }}
@@ -137,6 +137,7 @@ spec:
       restartPolicy: Always
       terminationGracePeriodSeconds: {{ .Values.scheduler.terminationGracePeriodSeconds }}
       serviceAccountName: {{ include "scheduler.serviceAccountName" . }}
+      {{- include "serviceLinks" . | nindent 6 }}
       {{- if and (eq (include "airflow.podLaunchingExecutor" .) "true") (not .Values.scheduler.serviceAccount.automountServiceAccountToken) }}
       automountServiceAccountToken: false
       {{- end }}
@@ -256,11 +257,7 @@ spec:
             {{- if .Values.scheduler.extraVolumeMounts }}
               {{- tpl (toYaml .Values.scheduler.extraVolumeMounts) . | nindent 12 }}
             {{- end }}
-            {{- if and (eq (include "airflow.podLaunchingExecutor" .) "true") (not .Values.scheduler.serviceAccount.automountServiceAccountToken) .Values.scheduler.serviceAccount.serviceAccountTokenVolume.enabled }}
-            - name: {{ .Values.scheduler.serviceAccount.serviceAccountTokenVolume.volumeName }}
-              mountPath: {{ .Values.scheduler.serviceAccount.serviceAccountTokenVolume.mountPath }}
-              readOnly: true
-            {{- end }}
+            {{- include "serviceAccountTokenVolumeMount" (list . .Values.scheduler.serviceAccount)  | nindent 12 }}
         {{- if and $localOrDagProcessorDisabled .Values.dags.gitSync.enabled }}
           {{- include "git_sync_container" . | indent 8 }}
         {{- end }}
@@ -282,11 +279,11 @@ spec:
           env:
             - name: AIRFLOW_HOME
               value: "{{ .Values.airflowHome }}"
-          {{- if .Values.scheduler.logGroomerSidecar.retentionDays }}
+          {{- if ne .Values.scheduler.logGroomerSidecar.retentionDays nil }}
             - name: AIRFLOW__LOG_RETENTION_DAYS
               value: "{{ .Values.scheduler.logGroomerSidecar.retentionDays }}"
           {{- end }}
-          {{- if .Values.scheduler.logGroomerSidecar.retentionMinutes }}
+          {{- if ne .Values.scheduler.logGroomerSidecar.retentionMinutes nil }}
             - name: AIRFLOW__LOG_RETENTION_MINUTES
               value: "{{ .Values.scheduler.logGroomerSidecar.retentionMinutes }}"
           {{- end }}
@@ -352,29 +349,7 @@ spec:
         {{- if .Values.scheduler.extraVolumes }}
           {{- tpl (toYaml .Values.scheduler.extraVolumes) . | nindent 8 }}
         {{- end }}
-        {{- if and (eq (include "airflow.podLaunchingExecutor" .) "true") (not .Values.scheduler.serviceAccount.automountServiceAccountToken) .Values.scheduler.serviceAccount.serviceAccountTokenVolume.enabled }}
-        - name: {{ .Values.scheduler.serviceAccount.serviceAccountTokenVolume.volumeName }}
-          projected:
-            defaultMode: 420
-            sources:
-            - serviceAccountToken:
-                {{- if .Values.scheduler.serviceAccount.serviceAccountTokenVolume.audience }}
-                audience: {{ .Values.scheduler.serviceAccount.serviceAccountTokenVolume.audience }}
-                {{- end }}
-                expirationSeconds: {{ .Values.scheduler.serviceAccount.serviceAccountTokenVolume.expirationSeconds }}
-                path: token
-            - configMap:
-                items:
-                - key: ca.crt
-                  path: ca.crt
-                name: kube-root-ca.crt
-            - downwardAPI:
-                items:
-                - fieldRef:
-                    apiVersion: v1
-                    fieldPath: metadata.namespace
-                  path: namespace
-        {{- end }}
+        {{- include "serviceAccountTokenVolume" (list . .Values.scheduler.serviceAccount) | nindent 8 }}
   {{- if .Values.logs.persistence.enabled }}
         - name: logs
           persistentVolumeClaim:

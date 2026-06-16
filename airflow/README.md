@@ -1,75 +1,185 @@
-<!--
- Licensed to the Apache Software Foundation (ASF) under one
- or more contributor license agreements.  See the NOTICE file
- distributed with this work for additional information
- regarding copyright ownership.  The ASF licenses this file
- to you under the Apache License, Version 2.0 (the
- "License"); you may not use this file except in compliance
- with the License.  You may obtain a copy of the License at
+# Apache Airflow (Helm)
 
-   http://www.apache.org/licenses/LICENSE-2.0
+Hướng dẫn tạo **secret key** và **connection** trước khi deploy Airflow.
 
- Unless required by applicable law or agreed to in writing,
- software distributed under the License is distributed on an
- "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- KIND, either express or implied.  See the License for the
- specific language governing permissions and limitations
- under the License.
- -->
+> Namespace mặc định: `airflow`  
+> File cấu hình: `values-prod.yaml`
 
-# Helm Chart for Apache Airflow
+## 1. Secret key (bắt buộc)
 
-[![Artifact HUB](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/apache-airflow)](https://artifacthub.io/packages/search?repo=apache-airflow)
+Các secret sau phải tồn tại trong Kubernetes **trước** khi `helm install/upgrade`. Tên secret khớp với `values-prod.yaml`.
 
-[Apache Airflow](https://airflow.apache.org/) is a platform to programmatically author, schedule and monitor workflows.
+### 1.1. Fernet key
 
-## Introduction
+Dùng để mã hóa password trong Airflow (Connection, Variable).
 
-This chart will bootstrap an [Airflow](https://airflow.apache.org) deployment on a [Kubernetes](http://kubernetes.io)
-cluster using the [Helm](https://helm.sh) package manager.
+```bash
+# Tạo key
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 
-## Requirements
+kubectl create secret generic airflow-fernet-key \
+  --from-literal=fernet-key="<FERNET_KEY>" \
+  -n airflow
+```
 
-- Kubernetes 1.30+ cluster
-- Helm 3.0+
-- PV provisioner support in the underlying infrastructure (optionally)
+> **Lưu ý:** Fernet key phải giữ nguyên sau khi deploy. Đổi key sẽ không giải mã được dữ liệu cũ.
 
-## Features
+### 1.2. API secret key & JWT secret
 
-* Supported executors (all Airflow versions): ``LocalExecutor``, ``CeleryExecutor``, ``KubernetesExecutor``
-* Supported executors (Airflow version ``2.11.X``): ``LocalKubernetesExecutor``, ``CeleryKubernetesExecutor``
-* Supported multiple Executors (``2.11+``)
-* Supported AWS executors with AWS provider version ``8.21.0+``:
-   * ``airflow.providers.amazon.aws.executors.batch.AwsBatchExecutor``
-   * ``airflow.providers.amazon.aws.executors.ecs.AwsEcsExecutor``
-* Supported Edge executor with edge3 provider version ``1.0.0+``:
-   * ``airflow.providers.edge3.executors.EdgeExecutor``
-* Supported Airflow version: ``2.11+``, ``3.0+``
-* Supported database backend: ``PostgreSQL``, ``MySQL``
-* Autoscaling for ``CeleryExecutor`` provided by KEDA
-* ``PostgreSQL`` and ``PgBouncer`` with a battle-tested configuration
-* **Security enhancements**:
-   * Container-specific Service Account Token Volume configuration implementing Principle of Least Privilege
-   * Only scheduler containers receive API access; init and sidecar containers operate without tokens
-   * Defense-in-depth security with both ServiceAccount and Pod-level controls
-   * Compatibility with security policies like Kyverno and compliance frameworks
-* Monitoring:
-   * StatsD/Prometheus metrics for Airflow
-   * Prometheus metrics for PgBouncer
-   * Flower
-* Automatic database migration after a new deployment
-* Administrator account creation during deployment
-* Kerberos secure configuration
-* One-command deployment for any type of executor. You don't need to provide other services e.g. Redis/Database to test the Airflow.
+Dùng cho Airflow 3+ (API server, session, JWT).
 
-## Documentation
+```bash
+kubectl create secret generic airflow-api-secret-key \
+  --from-literal=api-secret-key="$(openssl rand -base64 32)" \
+  -n airflow
 
-Full documentation for Helm Chart (latest **stable** release) lives [on the website](https://airflow.apache.org/docs/helm-chart/).
+kubectl create secret generic airflow-jwt-secret \
+  --from-literal=jwt-secret="$(openssl rand -base64 32)" \
+  -n airflow
+```
 
-> Note: If you're looking for documentation for main branch (latest development branch): you can find it on [s.apache.org/airflow-docs/](http://apache-airflow-docs.s3-website.eu-central-1.amazonaws.com/docs/helm-chart/stable/index.html).
-> Source code for documentation is in [../docs/helm-chart](https://github.com/apache/airflow/tree/main/docs/helm-chart)
->
+### 1.3. Database metadata
 
-## Contributing
+```bash
+kubectl create secret generic airflow-metadata-secret \
+  --from-literal=connection="postgresql+psycopg2://<user>:<password>@<host>:5432/<database>" \
+  -n airflow
+```
 
-Want to help build Apache Airflow? Check out our [contributing documentation](https://github.com/apache/airflow/blob/main/contributing-docs/README.rst).
+### 1.4. Azure OIDC (đăng nhập UI)
+
+```bash
+kubectl create secret generic airflow-azure-oidc \
+  --from-literal=tenant-id="<AZURE_TENANT_ID>" \
+  --from-literal=client-id="<AZURE_CLIENT_ID>" \
+  --from-literal=client-secret="<AZURE_CLIENT_SECRET>" \
+  -n airflow
+```
+
+### 1.5. SSH key (git-sync DAGs)
+
+```bash
+kubectl create secret generic airflow-ssh-secret \
+  --from-file=gitSshKey=<path-to-private-key> \
+  -n airflow
+```
+
+---
+
+## 2. Connection qua Kubernetes Secret
+
+Trong `values-prod.yaml`, connection được inject vào pod qua biến môi trường `AIRFLOW_CONN_<CONN_ID>`.
+
+| Conn Id (trong DAG/UI) | K8s Secret | Key | Biến môi trường |
+|------------------------|------------|-----|-----------------|
+| `minio_conn` | `airflow-minio-conn` | `conn` | `AIRFLOW_CONN_MINIO_CONN` |
+| `git_team1` | `airflow-git-conn-team1` | `conn` | `AIRFLOW_CONN_GIT_TEAM1` |
+| `git_team2` | `airflow-git-conn-team2` | `conn` | `AIRFLOW_CONN_GIT_TEAM2` |
+| `smtp_default` | `airflow-smtp-conn` | `conn` | `AIRFLOW_CONN_SMTP_DEFAULT` |
+
+### 2.1. Tạo secret connection
+
+Giá trị `conn` là **Airflow URI connection string**.
+
+```bash
+# Ví dụ: MinIO (S3)
+kubectl create secret generic airflow-minio-conn \
+  --from-literal=conn='aws://<access_key>:<secret_key>@/?region_name=us-east-1&endpoint_url=http%3A%2F%2F<minio-host>%3A9000' \
+  -n airflow
+
+# Ví dụ: Git
+kubectl create secret generic airflow-git-conn-team1 \
+  --from-literal=conn='git://<user>:<token>@<gitlab-host>/<group>/<repo>.git' \
+  -n airflow
+
+# Ví dụ: SMTP
+kubectl create secret generic airflow-smtp-conn \
+  --from-literal=conn='smtp://<user>%40domain.com:<password>@smtp.office365.com:587/?starttls=true&ssl=false' \
+  -n airflow
+```
+
+### 2.2. SMTP user/password (cấu hình SMTP core)
+
+```bash
+kubectl create secret generic airflow-smtp \
+  --from-literal=email_user="<smtp-user>" \
+  --from-literal=email_password="<smtp-password>" \
+  -n airflow
+```
+
+### 2.3. Thêm connection mới
+
+1. Tạo K8s secret chứa key `conn`.
+2. Thêm vào `values-prod.yaml` mục `secret`:
+
+```yaml
+secret:
+  - envName: AIRFLOW_CONN_MY_CONN
+    secretName: airflow-my-conn
+    secretKey: conn
+```
+
+3. Chạy `helm upgrade` để pod nhận biến môi trường mới.
+
+**Quy tắc đặt tên:** Conn Id `my_conn` → biến môi trường `AIRFLOW_CONN_MY_CONN` (viết hoa, dấu `-` thành `_`).
+
+---
+
+## 3. Connection / Variable trên UI
+
+Truy cập: `https://airflowdp.company.com.vn`
+
+### 3.1. Tạo Connection
+
+1. Vào **Admin → Connections** (hoặc **Browse → Connections**).
+2. Bấm **+** (Add Connection).
+3. Điền:
+   - **Connection Id**: tên dùng trong DAG, ví dụ `postgres_default`
+   - **Connection Type**: `postgres`, `http`, `aws`, `smtp`, ...
+   - **Host**, **Login**, **Password**, **Port**, **Schema**, **Extra** (nếu cần)
+4. Bấm **Save**.
+
+Trong DAG dùng:
+
+```python
+from airflow.providers.postgres.hooks.postgres import PostgresHook
+
+hook = PostgresHook(postgres_conn_id="postgres_default")
+```
+
+### 3.2. Tạo Variable
+
+1. Vào **Admin → Variables**.
+2. Bấm **+**, nhập **Key** và **Val**.
+3. Bấm **Save**.
+
+Trong DAG:
+
+```python
+from airflow.models import Variable
+
+value = Variable.get("my_key")
+```
+
+---
+
+## 4. Khi nào dùng Secret K8s vs UI?
+
+| Cách | Phù hợp khi |
+|------|-------------|
+| **K8s Secret** (`AIRFLOW_CONN_*`) | Connection dùng chung toàn cluster, quản lý qua GitOps/Helm, không muốn lưu trên UI |
+| **UI** | Thêm/sửa nhanh khi dev, connection chỉ dùng thử hoặc do team vận hành quản lý trực tiếp |
+
+> Connection tạo trên UI cũng được mã hóa bằng Fernet key. Đảm bảo `airflow-fernet-key` đã tạo đúng trước khi deploy.
+
+---
+
+## 5. Kiểm tra nhanh
+
+```bash
+# Xem secret đã tạo
+kubectl get secret -n airflow | grep airflow-
+
+# Xem connection trong pod (ví dụ scheduler)
+kubectl exec -n airflow deploy/airflow-scheduler -- env | grep AIRFLOW_CONN
+```

@@ -58,9 +58,18 @@ data:
     {{- end }}
     {{ end }}
 
-  {{- if .Values.airflowLocalSettings }}
+  {{- if or .Values.airflowLocalSettings .Values.airflowLocalSettingsFromFile }}
   airflow_local_settings.py: |-
-    {{- tpl .Values.airflowLocalSettings . | nindent 4 }}
+    {{- if .Values.airflowLocalSettings }}
+      {{- tpl .Values.airflowLocalSettings . | nindent 4 }}
+    {{- else }}
+      {{- tpl (.Files.Get "files/airflow_local_settings.py") . | nindent 4 }}
+    {{- end }}
+  {{- end }}
+
+  {{- if .Values.migrateDatabaseJob.enabled }}
+  bootstrap_teams.py: |-
+    {{- tpl (.Files.Get "files/bootstrap_teams.py") . | nindent 4 }}
   {{- end }}
 
   {{- if and .Values.dags.gitSync.enabled .Values.dags.gitSync.knownHosts }}

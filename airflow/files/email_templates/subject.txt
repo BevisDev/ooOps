@@ -1,0 +1,1 @@
+[Airflow][PROD] [{{ team_name | default('unknown') }}] | {{ ti.dag_id }} is {{ ti.state.name }}

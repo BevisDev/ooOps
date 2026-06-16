@@ -127,6 +127,7 @@ spec:
       terminationGracePeriodSeconds: {{ .Values.triggerer.terminationGracePeriodSeconds }}
       restartPolicy: Always
       serviceAccountName: {{ include "triggerer.serviceAccountName" . }}
+      {{- include "serviceLinks" . | nindent 6 }}
       securityContext: {{ $securityContext | nindent 8 }}
       imagePullSecrets: {{ include "image_pull_secrets" . | nindent 8 }}
       initContainers:
@@ -241,11 +242,11 @@ spec:
           args: {{- tpl (toYaml .Values.triggerer.logGroomerSidecar.args) . | nindent 12 }}
           {{- end }}
           env:
-          {{- if .Values.triggerer.logGroomerSidecar.retentionDays }}
+          {{- if ne .Values.triggerer.logGroomerSidecar.retentionDays nil }}
             - name: AIRFLOW__LOG_RETENTION_DAYS
               value: "{{ .Values.triggerer.logGroomerSidecar.retentionDays }}"
           {{- end }}
-          {{- if .Values.triggerer.logGroomerSidecar.retentionMinutes }}
+          {{- if ne .Values.triggerer.logGroomerSidecar.retentionMinutes nil }}
             - name: AIRFLOW__LOG_RETENTION_MINUTES
               value: "{{ .Values.triggerer.logGroomerSidecar.retentionMinutes }}"
           {{- end }}

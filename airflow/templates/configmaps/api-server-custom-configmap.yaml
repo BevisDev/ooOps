@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: airflow-api-server-config
+  labels:
+    tier: airflow
+    component: api-server-config
+    release: {{ .Release.Name }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    heritage: {{ .Release.Service }}
+    {{- with .Values.labels }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
+data:
+  webserver_config.py: |-
+{{ .Files.Get "files/api_server/webserver_config.py" | nindent 4 }}

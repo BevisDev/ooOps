@@ -17,36 +17,39 @@
  under the License.
 */}}
 
-######################################
-## Airflow Dags PersistentVolumeClaim
-######################################
-{{- if and (not .Values.dags.persistence.existingClaim) .Values.dags.persistence.enabled }}
+#########################
+## OTel Collector Service
+#########################
+{{- if or .Values.otelCollector.tracesEnabled .Values.otelCollector.metricsEnabled }}
 apiVersion: v1
-kind: PersistentVolumeClaim
+kind: Service
 metadata:
-  name: {{ template "airflow_dags_volume_claim" . }}
+  name: {{ include "airflow.fullname" . }}-otel-collector
   labels:
     tier: airflow
-    component: dags-pvc
+    component: otel-collector
     release: {{ .Release.Name }}
     chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
     heritage: {{ .Release.Service }}
-    {{- with .Values.labels }}
-      {{- toYaml . | nindent 4 }}
+    {{- if or .Values.labels .Values.otelCollector.labels }}
+      {{- mustMerge .Values.otelCollector.labels .Values.labels | toYaml | nindent 4 }}
     {{- end }}
-  {{- with .Values.dags.persistence.annotations }}
+  {{- with .Values.otelCollector.service.annotations }}
   annotations: {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  accessModes: [{{ .Values.dags.persistence.accessMode | quote }}]
-  resources:
-    requests:
-      storage: {{ .Values.dags.persistence.size | quote }}
-  {{- if .Values.dags.persistence.storageClassName }}
-  {{- if (eq "-" .Values.dags.persistence.storageClassName) }}
-  storageClassName: ""
-  {{- else }}
-  storageClassName: {{ tpl .Values.dags.persistence.storageClassName . | quote }}
-  {{- end }}
-  {{- end }}
+  type: ClusterIP
+  selector:
+    tier: airflow
+    component: otel-collector
+    release: {{ .Release.Name }}
+  ports:
+    - name: otlp-grpc
+      protocol: TCP
+      port: {{ .Values.ports.otelCollectorOtlpGrpc }}
+      targetPort: {{ .Values.ports.otelCollectorOtlpGrpc }}
+    - name: otlp-http
+      protocol: TCP
+      port: {{ .Values.ports.otelCollectorOtlpHttp }}
+      targetPort: {{ .Values.ports.otelCollectorOtlpHttp }}
 {{- end }}
