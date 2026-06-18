@@ -1,0 +1,82 @@
+# Namespace deploy cluster (Strimzi operator phải watch namespace này)
+namespace: kafka
+
+cluster:
+  name: my-cluster
+  version: "4.0.0"
+  metadataVersion: "4.0-IV0"
+
+  # Cấu hình HA cho topic nội bộ
+  replicationFactor: 3
+  minInsyncReplicas: 2
+
+  listeners:
+    - name: plain
+      port: 9092
+      type: internal
+      tls: false
+    - name: tls
+      port: 9093
+      type: internal
+      tls: true
+
+  # Rack awareness khi node có label topology (vd: topology.kubernetes.io/zone)
+  rack:
+    enabled: false
+    topologyKey: topology.kubernetes.io/zone
+
+  entityOperator:
+    topicOperator: {}
+    userOperator: {}
+
+nodePools:
+  controller:
+    replicas: 3
+    roles:
+      - controller
+    storage:
+      type: jbod
+      volumes:
+        - id: 0
+          type: persistent-claim
+          size: 10Gi
+          deleteClaim: false
+          # class: fast-ssd   # uncomment nếu cần StorageClass cụ thể
+    resources:
+      requests:
+        memory: 1Gi
+        cpu: 500m
+      limits:
+        memory: 2Gi
+        cpu: "1"
+
+  broker:
+    replicas: 3
+    roles:
+      - broker
+    storage:
+      type: jbod
+      volumes:
+        - id: 0
+          type: persistent-claim
+          size: 100Gi
+          deleteClaim: false
+    resources:
+      requests:
+        memory: 2Gi
+        cpu: "1"
+      limits:
+        memory: 4Gi
+        cpu: "2"
+
+ha:
+  podAntiAffinity: true
+  topologySpread:
+    enabled: true
+    topologyKey: kubernetes.io/hostname
+    maxSkew: 1
+    whenUnsatisfiable: DoNotSchedule
+
+  podDisruptionBudget:
+    enabled: true
+    maxUnavailable: 1

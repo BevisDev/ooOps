@@ -1,0 +1,21 @@
+{{- $poolName := "broker" }}
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaNodePool
+metadata:
+  name: {{ $poolName }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "kafka-cluster.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.nodePools.broker.replicas }}
+  roles:
+    {{- toYaml .Values.nodePools.broker.roles | nindent 4 }}
+  storage:
+    {{- toYaml .Values.nodePools.broker.storage | nindent 4 }}
+  resources:
+    {{- toYaml .Values.nodePools.broker.resources | nindent 4 }}
+  template:
+    pod:
+      affinity:
+        {{- include "kafka-cluster.antiAffinity" (dict "Values" .Values "poolName" $poolName) | nindent 8 }}
+      {{- include "kafka-cluster.topologySpread" (dict "Values" .Values "poolName" $poolName) | nindent 6 }}

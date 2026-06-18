@@ -1,0 +1,33 @@
+apiVersion: kafka.strimzi.io/v1
+kind: Kafka
+metadata:
+  name: {{ .Values.cluster.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "kafka-cluster.labels" . | nindent 4 }}
+  annotations:
+    strimzi.io/node-pools: enabled
+    strimzi.io/kraft: enabled
+spec:
+  kafka:
+    version: {{ .Values.cluster.version | quote }}
+    metadataVersion: {{ .Values.cluster.metadataVersion | quote }}
+    listeners:
+      {{- toYaml .Values.cluster.listeners | nindent 6 }}
+    config:
+      offsets.topic.replication.factor: {{ .Values.cluster.replicationFactor }}
+      transaction.state.log.replication.factor: {{ .Values.cluster.replicationFactor }}
+      transaction.state.log.min.isr: {{ .Values.cluster.minInsyncReplicas }}
+      default.replication.factor: {{ .Values.cluster.replicationFactor }}
+      min.insync.replicas: {{ .Values.cluster.minInsyncReplicas }}
+    {{- if .Values.cluster.rack.enabled }}
+    rack:
+      topologyKey: {{ .Values.cluster.rack.topologyKey | quote }}
+    {{- end }}
+    {{- if .Values.ha.podDisruptionBudget.enabled }}
+    template:
+      podDisruptionBudget:
+        maxUnavailable: {{ .Values.ha.podDisruptionBudget.maxUnavailable }}
+    {{- end }}
+  entityOperator:
+    {{- toYaml .Values.cluster.entityOperator | nindent 4 }}

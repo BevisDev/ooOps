@@ -1,0 +1,21 @@
+{{- $poolName := "controller" }}
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaNodePool
+metadata:
+  name: {{ $poolName }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "kafka-cluster.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.nodePools.controller.replicas }}
+  roles:
+    {{- toYaml .Values.nodePools.controller.roles | nindent 4 }}
+  storage:
+    {{- toYaml .Values.nodePools.controller.storage | nindent 4 }}
+  resources:
+    {{- toYaml .Values.nodePools.controller.resources | nindent 4 }}
+  template:
+    pod:
+      affinity:
+        {{- include "kafka-cluster.antiAffinity" (dict "Values" .Values "poolName" $poolName) | nindent 8 }}
+      {{- include "kafka-cluster.topologySpread" (dict "Values" .Values "poolName" $poolName) | nindent 6 }}
