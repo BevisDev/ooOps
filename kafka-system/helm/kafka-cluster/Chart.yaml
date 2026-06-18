@@ -1,0 +1,17 @@
+apiVersion: v2
+
+name: kafka-cluster
+
+description: kafka cluster
+
+keywords:
+- kafka
+- management
+- automation
+- infrastructure
+
+kubeVersion: '>=1.21.0-0'
+
+type: application
+
+version: 0.1.0

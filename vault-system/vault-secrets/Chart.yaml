@@ -1,0 +1,18 @@
+apiVersion: v2
+
+name: vault-secrets
+
+description: Generic vault secrets
+
+keywords:
+- vault
+- secrets
+- management
+- automation
+- infrastructure
+
+kubeVersion: '>=1.21.0-0'
+
+type: application
+
+version: 0.1.0
