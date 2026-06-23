@@ -102,7 +102,7 @@ cruiseControl:
 controllers:
   replicas: 3
   storage:
-    type: PersistentClaimStorage
+    type: persistent-claim
     size: 20Gi
     class: longhorn
     deleteClaim: false
@@ -160,3 +160,4 @@ brokers:
                   strimzi.io/cluster: dp-kafka
                   strimzi.io/pool-name: brokers
               topologyKey: kubernetes.io/hostname
+
