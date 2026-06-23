@@ -1,61 +1,67 @@
+{{- $root := . }}
+{{- $entity := .Values.entityOperator }}
+{{- $exporter := .Values.kafkaExporter }}
+{{- $cruise := .Values.cruiseControl }}
+{{- with .Values.kafka }}
 apiVersion: kafka.strimzi.io/v1
 kind: Kafka
 metadata:
   name: {{ include "kafka.clusterName" . }}
   labels:
     {{- include "kafka.labels" . | nindent 4 }}
+  {{- with .metadata.annotations }}
   annotations:
-    {{- with .Values.kafka.metadata.annotations }}
     {{- toYaml . | nindent 4 }}
-    {{- end }}
+  {{- end }}
 spec:
   kafka:
-    version: {{ .Values.kafka.version | quote }}
-    metadataVersion: {{ .Values.kafka.version | quote }}
+    version: {{ .version | quote }}
+    metadataVersion: {{ .version | quote }}
     listeners:
-      {{- toYaml .Values.kafka.listeners | nindent 6 }}
+      {{- toYaml .listeners | nindent 6 }}
     config:
-      {{- toYaml .Values.kafka.config | nindent 6 }}
-    {{- with .Values.kafka.jvmOptions }}
+      {{- toYaml .config | nindent 6 }}
+    {{- with .jvmOptions }}
     jvmOptions:
       {{- toYaml . | nindent 6 }}
     {{- end }}
-    {{- with .Values.kafka.logging }}
+    {{- with .logging }}
     logging:
       {{- toYaml . | nindent 6 }}
     {{- end }}
-    {{- if .Values.kafka.template }}
+    {{- if .template }}
     template:
-      {{- toYaml .Values.kafka.template | nindent 6 }}
+      {{- toYaml .template | nindent 6 }}
     {{- end }}
-  {{- if .Values.entityOperator.enabled }}
+  {{- if $entity.enabled }}
   entityOperator:
-    {{- if .Values.entityOperator.topicOperator }}
+    {{- if $entity.topicOperator }}
     topicOperator:
-      {{- toYaml .Values.entityOperator.topicOperator | nindent 6 }}
+      {{- toYaml $entity.topicOperator | nindent 6 }}
     {{- else }}
     topicOperator: {}
     {{- end }}
-    {{- if .Values.entityOperator.userOperator }}
+    {{- if $entity.userOperator }}
     userOperator:
-      {{- toYaml .Values.entityOperator.userOperator | nindent 6 }}
+      {{- toYaml $entity.userOperator | nindent 6 }}
     {{- else }}
     userOperator: {}
     {{- end }}
   {{- end }}
-  {{- if .Values.kafkaExporter.enabled }}
+  {{- if $exporter.enabled }}
   kafkaExporter:
-    {{- if .Values.kafkaExporter.spec }}
-    {{- toYaml .Values.kafkaExporter.spec | nindent 4 }}
+    {{- if $exporter.spec }}
+    {{- toYaml $exporter.spec | nindent 4 }}
     {{- else }}
     {}
     {{- end }}
   {{- end }}
-  {{- if .Values.cruiseControl.enabled }}
+  {{- if $cruise.enabled }}
   cruiseControl:
-    {{- if .Values.cruiseControl.spec }}
-    {{- toYaml .Values.cruiseControl.spec | nindent 4 }}
+    {{- if $cruise.spec }}
+    {{- toYaml $cruise.spec | nindent 4 }}
     {{- else }}
     {}
     {{- end }}
   {{- end }}
+{{- end }}

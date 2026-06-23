@@ -3,7 +3,10 @@
 Helm chart deploy **Kafka cluster** (KRaft, 3 controllers + 3 brokers).
 
 # Note
- - 045-Crd-kafkanodepool.yaml: chỉ có 2 role: (controller | broker)
+
+045-Crd-kafkanodepool.yaml
+ - 2 role (controller | broker)
+ - storage: type (ephemeral | persistent-claim | jbod)
 
 ## Kiến trúc
 

@@ -4,7 +4,8 @@
 replicas: 2
 
 # Contains `.Release.Namespace` by default
-watchNamespaces: []
+watchNamespaces: 
+  - kafka
 watchAnyNamespace: false
 
 defaultImageRegistry: quay.io

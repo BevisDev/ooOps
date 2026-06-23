@@ -1931,12 +1931,12 @@ scheduler:
 
   # Scheduler pod disruption budget
   podDisruptionBudget:
-    enabled: false
+    enabled: true
 
     # PDB configuration (`minAvailable` and `maxUnavailable` are mutually exclusive)
     config:
-      maxUnavailable: 1
-      # minAvailable: 1
+      maxUnavailable: ~
+      minAvailable: 1
 
   resources: 
     limits:
@@ -1973,16 +1973,15 @@ scheduler:
 
   # Select certain nodes for Airflow scheduler pods.
   nodeSelector: {}
-  affinity: {}
-  # default scheduler affinity is:
-  #  podAntiAffinity:
-  #    preferredDuringSchedulingIgnoredDuringExecution:
-  #    - podAffinityTerm:
-  #        labelSelector:
-  #          matchLabels:
-  #            component: scheduler
-  #        topologyKey: kubernetes.io/hostname
-  #      weight: 100
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                component: scheduler
+            topologyKey: kubernetes.io/hostname
+          weight: 100
 
   tolerations: []
   topologySpreadConstraints: []
@@ -2379,12 +2378,12 @@ apiServer:
     #   - "10.123.0.0/16"
 
   podDisruptionBudget:
-    enabled: false
+    enabled: true
 
     # PDB configuration (`minAvailable` and `maxUnavailable` are mutually exclusive)
     config:
-      maxUnavailable: 1
-      # minAvailable: 1
+      maxUnavailable: ~
+      minAvailable: 1
 
   # Allow overriding Update Strategy for API server
   strategy: ~
@@ -2431,7 +2430,16 @@ apiServer:
 
   # Select certain nodes for Airflow API server pods.
   nodeSelector: {}
-  affinity: {}
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              component: api-server
+          topologyKey: kubernetes.io/hostname
+        weight: 100
+    
   tolerations: []
   topologySpreadConstraints: []
 
@@ -3086,12 +3094,13 @@ dagProcessor:
 
   # Dag processor pod disruption budget
   podDisruptionBudget:
-    enabled: false
+    enabled: true
 
     # PDB configuration (`minAvailable` and `maxUnavailable` are mutually exclusive)
     config:
-      maxUnavailable: 1
-      # minAvailable: 1
+      maxUnavailable: ~
+      minAvailable: 1
+      unhealthyPodEvictionPolicy: AlwaysAllow
 
   # When not set, the values defined in the global `securityContext` will be used
   # (deprecated, use `dagProcessor.securityContexts` instead)

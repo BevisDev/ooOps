@@ -13,13 +13,6 @@ Kafka cluster name used by Strimzi CRs and bootstrap service.
 {{- end -}}
 
 {{/*
-Bootstrap servers DNS name inside the release namespace.
-*/}}
-{{- define "kafka.bootstrapServers" -}}
-{{- printf "%s-kafka-bootstrap.%s.svc:9092" (include "kafka.clusterName" .) .Release.Namespace -}}
-{{- end -}}
-
-{{/*
  labels for resources
 */}}
 {{- define "kafka.labels" -}}

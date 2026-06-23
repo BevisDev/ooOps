@@ -1,48 +1,41 @@
+{{- $root := . }}
+{{- with .Values.brokers }}
 apiVersion: kafka.strimzi.io/v1
 kind: KafkaNodePool
 metadata:
   name: brokers
-  labels: 
-    {{- include "kafka.labels" . | nindent 4 }}
-  {{- with $cfg.annotations }}
+  labels:
+    {{- include "kafka.labels" $root | nindent 4 }}
+  {{- with .annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  replicas: {{ required (printf "%s.replicas is required" $name) $cfg.replicas }}
+  replicas: {{ required "brokers.replicas is required" .replicas }}
   roles:
     - broker
   storage:
-    type: {{ $cfg.storage.type }}
-    {{- if eq $cfg.storage.type "persistent-claim" }}
-    size: {{ required (printf "%s.storage.size is required" $name) $cfg.storage.size }}
-    deleteClaim: {{ $cfg.storage.deleteClaim | default false }}
-    {{- with $cfg.storage.class }}
+    type: {{ required "brokers.storage.type is required" .storage.type }}
+    {{- if eq .storage.type "persistent-claim" }}
+    size: {{ required "brokers.storage.size is required" .storage.size }}
+    deleteClaim: {{ .storage.deleteClaim | default false }}
+    {{- with .storage.class }}
     class: {{ . }}
     {{- end }}
-    {{- with $cfg.storage.id }}
+    {{- with .storage.id }}
     id: {{ . }}
     {{- end }}
     {{- end }}
-  {{- with $cfg.resources }}
+  {{- with .resources }}
   resources:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  {{- with $cfg.jvmOptions }}
+  {{- with .jvmOptions }}
   jvmOptions:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  {{- $tpl := deepCopy ($cfg.template | default dict) }}
-  {{- if not (dig "pod" "affinity" nil $tpl) }}
-  {{- $cluster := include "kafka.clusterName" $root }}
-  {{- $antiAffinity := dict "requiredDuringSchedulingIgnoredDuringExecution" (list (dict "labelSelector" (dict "matchLabels" (dict "strimzi.io/cluster" $cluster "strimzi.io/pool-name" $name)) "topologyKey" "kubernetes.io/hostname")) }}
-  {{- $pod := merge (dig "pod" dict $tpl) (dict "affinity" (dict "podAntiAffinity" $antiAffinity)) }}
-  {{- $_ := set $tpl "pod" $pod }}
-  {{- end }}
-  {{- if $root.Values.imagePullSecrets }}
-  {{- $pod := merge (dig "pod" dict $tpl) (dict "imagePullSecrets" $root.Values.imagePullSecrets) }}
-  {{- $_ := set $tpl "pod" $pod }}
-  {{- end }}
+  {{- with .template }}
   template:
-    {{- toYaml $tpl | nindent 4 }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 {{- end }}

@@ -171,7 +171,7 @@ class AzureFabAuthManager(FabAuthManager):
             team_name,
             method=method,
             has_details=details is not None,
-            super_check=lambda: super().is_authorized_connection(
+            super_check=lambda: super(AzureFabAuthManager, self).is_authorized_connection(
                 method=method, user=user, details=details
             ),
         )
@@ -195,11 +195,11 @@ class AzureFabAuthManager(FabAuthManager):
             team_name,
             method=method,
             has_details=details is not None,
-            super_check=lambda: super().is_authorized_variable(
+            super_check=lambda: super(AzureFabAuthManager, self).is_authorized_variable(
                 method=method, user=user, details=details
             ),
         )
-
+    
     def is_authorized_pool(
         self,
         *,
@@ -219,7 +219,7 @@ class AzureFabAuthManager(FabAuthManager):
             team_name,
             method=method,
             has_details=details is not None,
-            super_check=lambda: super().is_authorized_pool(
+            super_check=lambda: super(AzureFabAuthManager, self).is_authorized_pool(
                 method=method, user=user, details=details
             ),
         )

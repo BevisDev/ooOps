@@ -10,7 +10,9 @@ kafka:
   version: "4.2.0"
   metadata:
     labels: {}
-    annotations: {}
+    annotations:
+      # enabled: https://strimzi.io/blog/2023/08/14/kafka-node-pools-introduction/
+      strimzi.io/node-pools: enabled
 
   # 6.2 Specifying listener types
   # https://strimzi.io/docs/operators/latest/configuring.html#specifying_listener_types
@@ -88,6 +90,18 @@ controllers:
   jvmOptions:
     -Xms: 1g
     -Xmx: 1g
+  template:
+    pod:
+      imagePullSecrets:
+        - name: dockerhub-regcred
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  strimzi.io/cluster: dp-kafka
+                  strimzi.io/pool-name: controllers
+              topologyKey: kubernetes.io/hostname
 
 # kafka brokers definitions
 # https://strimzi.io/docs/operators/latest/configuring.html#type-KafkaNodePool-reference
@@ -108,3 +122,15 @@ brokers:
   jvmOptions:
     -Xms: 2g
     -Xmx: 2g
+  template:
+    pod:
+      imagePullSecrets:
+        - name: dockerhub-regcred
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  strimzi.io/cluster: dp-kafka
+                  strimzi.io/pool-name: brokers
+              topologyKey: kubernetes.io/hostname
