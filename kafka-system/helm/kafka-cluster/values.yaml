@@ -66,6 +66,30 @@ kafka:
 
 entityOperator:
   enabled: true
+  # 45.2. EntityTopicOperatorSpec schema properties
+  # https://strimzi.io/docs/operators/latest/configuring.html#type-EntityTopicOperatorSpec-schema-reference
+  topicOperator:
+    # Interval between periodic reconciliations in milliseconds.
+    reconciliationIntervalSeconds: 300
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+  # 46.2. EntityUserOperatorSpec schema properties
+  # https://strimzi.io/docs/operators/latest/configuring.html#type-EntityUserOperatorSpec-schema-reference
+  userOperator:
+    # Interval between periodic reconciliations in milliseconds.
+    reconciliationIntervalSeconds: 300
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
 
 kafkaExporter:
   enabled: false
