@@ -1,6 +1,6 @@
 ## @section Common
 ## @param replicaCount Number of Kafka-UI replicas to deploy
-replicaCount: 1
+replicaCount: 2
 
 ## @param image.registry [string] image registry
 ## @param image.repository [string] image repository
@@ -11,7 +11,7 @@ image:
   repository: kafbat/kafka-ui
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "v1.5.0"
+  tag: ""
 
 ## @param imagePullSecrets Docker registry secret names as an array
 imagePullSecrets: []
@@ -83,13 +83,12 @@ env: {}
 
 ## @param resources Set Kafka-UI container requests and limits for different resources like CPU or memory (essential for production workloads)
 resources:
-  {}
-  # limits:
-  #   cpu: 200m
-  #   memory: 512Mi
-  # requests:
-  #   cpu: 200m
-  #   memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
 
 ## @param initContainers Add additional init containers to the Kafka-UI pods
 ## ref: https://kubernetes.io/docs/concepts/workloads/pods/init-containers/
@@ -225,7 +224,7 @@ service:
 ##
 ingress:
   ## @param ingress.enabled [string] Enable ingress record generation for Kafka-UI
-  enabled: false
+  enabled: true
   ## @param ingress.annotations [object] Additional annotations for the Ingress resource. To enable certificate autogeneration, place here your cert-manager annotations.
   annotations: {}
 
@@ -236,7 +235,7 @@ ingress:
   ## This is supported in Kubernetes 1.18+ and required if you have more than one IngressClass marked as the default for your cluster .
   ## ref: https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/
   ##
-  ingressClassName: ""
+  ingressClassName: "nginx"
 
   ## @param ingress.path Default path for the ingress record
   ## NOTE: You may need to set this to '/*' in order to use this with ALB ingress controllers
@@ -248,7 +247,7 @@ ingress:
   pathType: "Prefix"
 
   ## @param ingress.host Default hostname for the ingress record
-  host: ""
+  host: "kafka-ui.example.com"
 
   # configs for Ingress TLS
   tls:
@@ -293,4 +292,4 @@ tolerations: []
 affinity: {}
 
 ## @param revisionHistoryLimit [nullable] Specify how many old ReplicaSets for this Deployment you want to retain
-revisionHistoryLimit: null
+revisionHistoryLimit: 3
