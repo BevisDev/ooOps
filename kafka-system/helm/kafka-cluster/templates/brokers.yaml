@@ -36,6 +36,6 @@ spec:
   {{- end }}
   {{- with .template }}
   template:
-    {{- toYaml . | nindent 4 }}
+    {{- tpl (toYaml .) $root | nindent 4 }}
   {{- end }}
 {{- end }}

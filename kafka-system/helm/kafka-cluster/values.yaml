@@ -142,7 +142,7 @@ controllers:
           requiredDuringSchedulingIgnoredDuringExecution:
             - labelSelector:
                 matchLabels:
-                  strimzi.io/cluster: dp-kafka
+                  strimzi.io/cluster: '{{ .Values.clusterName }}'
                   strimzi.io/pool-name: controllers
               topologyKey: kubernetes.io/hostname
 
@@ -174,7 +174,7 @@ brokers:
           requiredDuringSchedulingIgnoredDuringExecution:
             - labelSelector:
                 matchLabels:
-                  strimzi.io/cluster: dp-kafka
+                  strimzi.io/cluster: '{{ .Values.clusterName }}'
                   strimzi.io/pool-name: brokers
               topologyKey: kubernetes.io/hostname
 
