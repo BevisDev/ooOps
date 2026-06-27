@@ -1,4 +1,4 @@
-# Strimzi Kafka cluster (production). Bootstrap: <clusterName>-kafka-bootstrap.<namespace>.svc:9092
+# Bootstrap: <clusterName>-kafka-bootstrap.<namespace>.svc:9092
 clusterName: kafka-cluster
 
 nameOverride:
