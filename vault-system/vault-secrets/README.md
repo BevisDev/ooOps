@@ -1,4 +1,4 @@
-# Secrets Repository
+# Vault Secret
 
 Helm chart khai báo **VaultAuth** và **VaultStaticSecret** (VSO) — đồng bộ secret tĩnh từ Vault KV sang Kubernetes Secret.
 
@@ -20,16 +20,6 @@ dp-secrets (chart này)
         └── Kubernetes Secret
 ```
 
-## Cấu trúc repo
-
-```text
-vault-secrets/
-├── Chart.yaml
-├── values.yaml
-└── templates/
-    ├── vault-auth.yaml
-    └── vault-static-secret.yaml
-```
 
 ## Quy ước đặt tên (quan trọng)
 
@@ -86,11 +76,15 @@ staticSecrets:
       type: kubernetes.io/dockerconfigjson
 
   - name: git-ssh
-    namespace: gitlab
+    namespace: gitlab-runner
     enabled: true
     path: git-ssh
     # không transformation → sync raw key 1:1 (Opaque)
 
+  - name: runner-governance-secret
+    namespace: gitlab-runner
+    enabled: true
+    path: gitlab-runner/runner-governance
 ```
 
 | Field | Bắt buộc | Mô tả |

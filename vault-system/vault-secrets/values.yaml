@@ -17,7 +17,7 @@ defaults:
 # Creates vault-sa ServiceAccount and vault-auth VaultAuth per namespace.
 # Add a namespace here before defining staticSecrets in that namespace.
 vaultAuthNamespaces:
-  - namespace: gitlab
+  - namespace: gitlab-runner
     enabled: true
     kubernetes:
       role: readonly
@@ -27,15 +27,10 @@ vaultAuthNamespaces:
     kubernetes:
       role: readonly
 
-  - namespace: kafka
-    enabled: true
-    kubernetes:
-      role: readonly
-
 # VaultStaticSecret definitions synced from Vault KV to Kubernetes Secrets.
 staticSecrets: 
 # ===========================
-# ======== GITLAB ==========
+# ==== GITLAB RUNNER ========
 # ===========================
   - name: dockerhub-regcred
     namespace: gitlab-runner
@@ -49,6 +44,11 @@ staticSecrets:
     namespace: gitlab-runner
     enabled: true
     path: git-ssh
+
+  - name: gitlab-runner
+    namespace: gitlab-runner
+    enabled: true
+    path: gitlab-runner
 
 # ===========================
 # ==== AIRFLOW 3 ========
@@ -121,44 +121,6 @@ staticSecrets:
     enabled: true
     path: minio
     transformation: minioconn
-
-# ===========================
-# ========= KAFKA ==========
-# ===========================
-  - name: dockerhub-regcred
-    namespace: kafka
-    enabled: true
-    path: dockerhub
-    transformation: dockerconfigjson
-    destination:
-      type: kubernetes.io/dockerconfigjson
-  
-  - name: oidc-azure
-    namespace: kafka
-    enabled: true
-    path: oidc-azure
-
-  - name: dockerhub-regcred
-    namespace: kafka-connect
-    enabled: true
-    path: dockerhub
-    transformation: dockerconfigjson
-    destination:
-      type: kubernetes.io/dockerconfigjson
-
-# ===========================
-# ========= STRIMZI ==========
-# ===========================
-  - name: dockerhub-regcred
-    namespace: strimzi
-    enabled: true
-    path: dockerhub
-    transformation: dockerconfigjson
-    destination:
-      type: kubernetes.io/dockerconfigjson
-
-
-
 
 
 # Preset transformations for VaultStaticSecret.destination.transformation
