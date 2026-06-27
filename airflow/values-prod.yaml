@@ -3051,7 +3051,7 @@ dagProcessor:
 
 
   # Number of Airflow dag processors in the Deployment
-  replicas: 1
+  replicas: 2
 
   # Max number of old ReplicaSets to retain
   revisionHistoryLimit: 3
@@ -3158,16 +3158,15 @@ dagProcessor:
   # Select certain nodes for Airflow dag processor pods.
   nodeSelector: {}
 
-  affinity: {}
-  # Default dag processor affinity is:
-  #  podAntiAffinity:
-  #    preferredDuringSchedulingIgnoredDuringExecution:
-  #    - podAffinityTerm:
-  #        labelSelector:
-  #          matchLabels:
-  #            component: dag-processor
-  #        topologyKey: kubernetes.io/hostname
-  #      weight: 100
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              component: dag-processor
+          topologyKey: kubernetes.io/hostname
+        weight: 100
 
   tolerations: []
   topologySpreadConstraints: []
@@ -4242,6 +4241,8 @@ postgresql:
   image:
     repository: bitnamilegacy/postgresql
     tag: "16.1.0-debian-11-r15"
+    # pullSecrets:
+    #   - name: dockerhub-regcred
   auth:
     enablePostgresUser: true
     postgresPassword: postgres
@@ -4262,6 +4263,7 @@ config:
   api:
     base_url: "https://airfow.company.com.vn"
     expose_config: 'True'
+    test_connection: 'Enabled'
     theme: '{"tokens":{"colors":{"brand":{"50":{"value":"oklch(0.97 0.02 272)"},"100":{"value":"oklch(0.94 0.04 272)"},"200":{"value":"oklch(0.88 0.08 272)"},"300":{"value":"oklch(0.78 0.12 272)"},"400":{"value":"oklch(0.68 0.16 272)"},"500":{"value":"oklch(0.58 0.20 272)"},"600":{"value":"oklch(0.50 0.20 272)"},"700":{"value":"oklch(0.42 0.18 272)"},"800":{"value":"oklch(0.35 0.14 272)"},"900":{"value":"oklch(0.28 0.10 272)"},"950":{"value":"oklch(0.22 0.06 272)"}}}}}'
   core:
     multi_team: 'True'
@@ -4277,7 +4279,7 @@ config:
     # This defines the maximum number of task instances 
     #that can run concurrently per scheduler in Airflow
     # default: 32
-    parallelism: 128
+    # parallelism: 128
     max_active_runs_per_dag: 16
     max_active_tasks_per_dag: 32
     default_pool_task_slot_count: 128

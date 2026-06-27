@@ -453,7 +453,7 @@ networkPolicy:
 image:
   repository: docker.getcollate.io/openmetadata/server
   # Overrides the image tag whose default is the chart appVersion.
-  tag: ""
+  tag: "1.13.0"
   pullPolicy: "IfNotPresent"
 
 sidecars: []
@@ -509,8 +509,22 @@ serviceMonitor:
 
 ingress:
   enabled: true
-  className: "nginx"
-  annotations: {}
+  className: nginx
+  annotations: 
+    nginx.ingress.kubernetes.io/affinity: "cookie"
+    nginx.ingress.kubernetes.io/session-cookie-name: "route"
+    nginx.ingress.kubernetes.io/session-cookie-hash: "sha1"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    # fix return https
+    nginx.ingress.kubernetes.io/proxy-cookie-path: "/ /; Secure; HttpOnly; SameSite=None"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-Port 443;
+        proxy_cookie_flags ~ secure samesite=None;
+
     # kubernetes.io/tls-acme: "true"
   hosts:
     - host: open-metadata.local
@@ -664,35 +678,35 @@ extraInitContainers: []
 # Provision for InitContainers to be running before the `run-db-migration` InitContainer
 preMigrateInitContainers: []
 
-resources: {}
+resources:
 # We usually recommend not to specify default resources and to leave this as a conscious
 # choice for the user. This also increases chances charts run on environments with little
 # resources, such as Minikube.The resources configuration is required to enable autoscaling.
 # To specify resources, uncomment the following lines, adjust them as necessary, and remove
 # the curly braces after 'resources:'.
-#   limits:
-#     cpu: 1
-#     memory: 2048Mi
-#   requests:
-#     cpu: 500m
-#     memory: 1024Mi
+  limits:
+    cpu: 4
+    memory: 8Gi
+  requests:
+    cpu: 3
+    memory: 6Gi
 
 startingDeadlineSeconds: 100
 
 # Test connection pod configuration
 testConnection:
-  resources: {}
+  resources: 
   # We usually recommend not to specify default resources and to leave this as a conscious
   # choice for the user. This also increases chances charts run on environments with little
   # resources, such as Minikube.
   # To specify resources, uncomment the following lines, adjust them as necessary, and remove
   # the curly braces after 'resources:'.
-  #   limits:
-  #     cpu: 100m
-  #     memory: 128Mi
-  #   requests:
-  #     cpu: 50m
-  #     memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
 
 nodeSelector: {}
 

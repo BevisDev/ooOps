@@ -1,15 +1,16 @@
-# Apache Airflow (Helm)
+# Apache Airflow
 
-Hướng dẫn tạo **secret key** và **connection** trước khi deploy Airflow.
+- version: airflow 3.2.2
+- image: 
 
-> Namespace mặc định: `airflow`  
-> File cấu hình: `values-prod.yaml`
+## 1. Docker Images
 
-## 1. Secret key (bắt buộc)
+  - apache/airflow:3.2.2 (Dockerfile for install plugins)
+  - registry.k8s.io/git-sync/git-sync:v4.4.2 (optional) 
 
-Các secret sau phải tồn tại trong Kubernetes **trước** khi `helm install/upgrade`. Tên secret khớp với `values-prod.yaml`.
+## 2. Secret key (bắt buộc)
 
-### 1.1. Fernet key
+### 2.1 Fernet key
 
 Dùng để mã hóa password trong Airflow (Connection, Variable).
 
@@ -24,7 +25,7 @@ kubectl create secret generic airflow-fernet-key \
 
 > **Lưu ý:** Fernet key phải giữ nguyên sau khi deploy. Đổi key sẽ không giải mã được dữ liệu cũ.
 
-### 1.2. API secret key & JWT secret
+### 2.2 API secret key & JWT secret
 
 Dùng cho Airflow 3+ (API server, session, JWT).
 
@@ -38,7 +39,7 @@ kubectl create secret generic airflow-jwt-secret \
   -n airflow
 ```
 
-### 1.3. Database metadata
+### 2.3 Database metadata
 
 ```bash
 kubectl create secret generic airflow-metadata-secret \
@@ -46,7 +47,18 @@ kubectl create secret generic airflow-metadata-secret \
   -n airflow
 ```
 
-### 1.4. Azure OIDC (đăng nhập UI)
+### 2.4 Dockerhub private registry (optional)
+
+```bash
+kubectl create secret docker-registry dockerhub-regcred \
+  --docker-server='dockerhub.company.com.vn' \
+  --docker-username='<username>' \
+  --docker-password='<password>' \
+  --docker-email=author@gmail.com \
+  -n airflow
+```
+
+### 2.5 Azure OIDC (đăng nhập UI) (optional)
 
 ```bash
 kubectl create secret generic airflow-azure-oidc \
@@ -56,17 +68,18 @@ kubectl create secret generic airflow-azure-oidc \
   -n airflow
 ```
 
-### 1.5. SSH key (git-sync DAGs)
+### 2.6 SSH key (git-sync DAGs or gitBundles)
 
 ```bash
 kubectl create secret generic airflow-ssh-secret \
   --from-file=gitSshKey=<path-to-private-key> \
+  --from-file=known_hosts=<path-to-private-git>
   -n airflow
 ```
 
 ---
 
-## 2. Connection qua Kubernetes Secret
+## 3 Connection qua Kubernetes Secret
 
 Trong `values-prod.yaml`, connection được inject vào pod qua biến môi trường `AIRFLOW_CONN_<CONN_ID>`.
 
@@ -77,7 +90,7 @@ Trong `values-prod.yaml`, connection được inject vào pod qua biến môi tr
 | `git_team2` | `airflow-git-conn-team2` | `conn` | `AIRFLOW_CONN_GIT_TEAM2` |
 | `smtp_default` | `airflow-smtp-conn` | `conn` | `AIRFLOW_CONN_SMTP_DEFAULT` |
 
-### 2.1. Tạo secret connection
+### 3.1 Tạo secret connection
 
 Giá trị `conn` là **Airflow URI connection string**.
 
@@ -98,7 +111,7 @@ kubectl create secret generic airflow-smtp-conn \
   -n airflow
 ```
 
-### 2.2. SMTP user/password (cấu hình SMTP core)
+### 3.2. SMTP user/password (cấu hình SMTP core)
 
 ```bash
 kubectl create secret generic airflow-smtp \
@@ -107,79 +120,35 @@ kubectl create secret generic airflow-smtp \
   -n airflow
 ```
 
-### 2.3. Thêm connection mới
+## 4 Custom
 
-1. Tạo K8s secret chứa key `conn`.
-2. Thêm vào `values-prod.yaml` mục `secret`:
+### 4.1 webserver_config.py
 
-```yaml
-secret:
-  - envName: AIRFLOW_CONN_MY_CONN
-    secretName: airflow-my-conn
-    secretKey: conn
+Simple Authorization đơn giản <br>
+current: đăng nhập check AppRoles config trên Azure -> Tạo Roles Airflow <br>
+vd (AppRoles) `airflow_team1` -> `airflow_team1` (role airflow) <br>
+
+default mapping special roles Azure Roles -> Airflow Roles
+```sh
+  `airflow_admin` -> `Admin`
+  `airflow_op` -> `Op`
+  `airflow_developer` -> `User`
 ```
-
-3. Chạy `helm upgrade` để pod nhận biến môi trường mới.
-
-**Quy tắc đặt tên:** Conn Id `my_conn` → biến môi trường `AIRFLOW_CONN_MY_CONN` (viết hoa, dấu `-` thành `_`).
-
----
-
-## 3. Connection / Variable trên UI
-
-Truy cập: `https://airflowdp.company.com.vn`
-
-### 3.1. Tạo Connection
-
-1. Vào **Admin → Connections** (hoặc **Browse → Connections**).
-2. Bấm **+** (Add Connection).
-3. Điền:
-   - **Connection Id**: tên dùng trong DAG, ví dụ `postgres_default`
-   - **Connection Type**: `postgres`, `http`, `aws`, `smtp`, ...
-   - **Host**, **Login**, **Password**, **Port**, **Schema**, **Extra** (nếu cần)
-4. Bấm **Save**.
-
-Trong DAG dùng:
+### 4.2 airflow_local.settings.py
+ràng buộc DAG và task policy
+custom 2 hàm
 
 ```python
-from airflow.providers.postgres.hooks.postgres import PostgresHook
+from airflow.sdk import DAG
+from airflow.sdk.bases.operator import BaseOperator
 
-hook = PostgresHook(postgres_conn_id="postgres_default")
+def dag_policy(dag : DAG):
+
+def task_policy(task: BaseOperator) -> None:
 ```
 
-### 3.2. Tạo Variable
+### 4.3 azure.auth.py (multi-team: enable)
 
-1. Vào **Admin → Variables**.
-2. Bấm **+**, nhập **Key** và **Val**.
-3. Bấm **Save**.
+Custom Authen team login Azure (files/auth)
 
-Trong DAG:
-
-```python
-from airflow.models import Variable
-
-value = Variable.get("my_key")
-```
-
----
-
-## 4. Khi nào dùng Secret K8s vs UI?
-
-| Cách | Phù hợp khi |
-|------|-------------|
-| **K8s Secret** (`AIRFLOW_CONN_*`) | Connection dùng chung toàn cluster, quản lý qua GitOps/Helm, không muốn lưu trên UI |
-| **UI** | Thêm/sửa nhanh khi dev, connection chỉ dùng thử hoặc do team vận hành quản lý trực tiếp |
-
-> Connection tạo trên UI cũng được mã hóa bằng Fernet key. Đảm bảo `airflow-fernet-key` đã tạo đúng trước khi deploy.
-
----
-
-## 5. Kiểm tra nhanh
-
-```bash
-# Xem secret đã tạo
-kubectl get secret -n airflow | grep airflow-
-
-# Xem connection trong pod (ví dụ scheduler)
-kubectl exec -n airflow deploy/airflow-scheduler -- env | grep AIRFLOW_CONN
-```
+### 4.4 email_templates (smtp default)
