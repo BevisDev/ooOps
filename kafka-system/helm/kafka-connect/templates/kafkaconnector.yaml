@@ -1,0 +1,33 @@
+{{- if .Values.connect.enabled }}
+{{- if .Values.connect.useConnectorResources }}
+{{- $root := . }}
+{{- range .Values.connectors }}
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaConnector
+metadata:
+  name: {{ required "connector.name is required" .name }}
+  labels:
+    {{- include "connect.labels" $root | nindent 4 }}
+  {{- with .annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  class: {{ required "connector.class is required" .class | quote }}
+  tasksMax: {{ default 1 .tasksMax }}
+  {{- with .state }}
+  state: {{ . | quote }}
+  {{- end }}
+  {{- with .autoRestart }}
+  autoRestart:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .version }}
+  version: {{ . | quote }}
+  {{- end }}
+  config:
+    {{- required "connector.config is required" .config | toYaml | nindent 4 }}
+{{- end }}
+{{- end }}
+{{- end }}

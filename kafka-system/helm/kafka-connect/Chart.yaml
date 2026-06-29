@@ -1,0 +1,12 @@
+apiVersion: v2
+name: kafka-connect
+description: Strimzi Kafka Connect cluster and connector definitions
+type: application
+version: 0.1.0
+appVersion: "4.2.0"
+keywords:
+  - kafka
+  - kafka-connect
+  - cdc
+maintainers:
+  - name: truongthanh.binh@vietcredit.com.vn

@@ -1,0 +1,174 @@
+clusterName: kafka-connect-cdc
+
+nameOverride: connect-cdc
+
+imagePullSecrets:
+  - name: dockerhub-regcred
+
+# Upstream Kafka cluster that Connect attaches to.
+kafka:
+  name: dp-kafka
+  namespace: kafka
+  bootstrapPort: 9092
+  # Cluster CA secret must exist in the Connect namespace when TLS is enabled.
+  caSecretName: dp-kafka-cluster-ca-cert
+
+# 67. KafkaConnect schema reference
+# docs: https://strimzi.io/docs/operators/latest/configuring.html#type-KafkaConnect-reference
+connect:
+  name: cdc
+  enabled: true
+  version: "4.2.0"
+  replicas: 3
+  image: dockerhub.vietcredit.com.vn/dwh/kafka:4.2.0
+  # to init connectors below
+  useConnectorResources: true
+  
+  # groupId defaults to connect-cluster
+  # groupId: connect-cdc
+  
+  # The name of the Kafka topic where connector configurations are stored.
+  # default: connect-cluster-configs
+  # configStorageTopic: connect-cdc-configs
+
+  # default: connect-cluster-offsets
+  # offsetStorageTopic: connect-cdc-offsets
+  
+  # default: connect-cluster-status
+  # statusStorageTopic: connect-cdc-status
+
+  metadata:
+    labels: {}
+    annotations: {}
+
+  # 74. KafkaClientAuthenticationScramSha512 schema reference
+  # https://strimzi.io/docs/operators/latest/configuring.html#type-KafkaClientAuthenticationScramSha512-reference
+  authentication:
+    type: scram-sha-512
+    username: cdc
+    passwordSecret:
+      secretName: cdc
+      password: password
+
+  tls:
+    trustedCertificates:
+      - secretName: dp-kafka-cluster-ca-cert
+        certificate: ca.crt
+
+  # docs: https://strimzi.io/docs/operators/latest/configuring.html#property-kafka-connect-additional-configuration-reference
+  # additional: https://kafka.apache.org/41/configuration/kafka-connect-configs/
+  config:
+    config.storage.replication.factor: 3
+    offset.storage.replication.factor: 3
+    status.storage.replication.factor: 3
+
+    # default: org.apache.kafka.connect.json.JsonConverter
+    # avro (optional): io.confluent.connect.avro.AvroConverter
+    key.converter: org.apache.kafka.connect.json.JsonConverter
+    # default: org.apache.kafka.connect.json.JsonConverter
+    # avro (optional): io.confluent.connect.avro.AvroConverter
+    value.converter: org.apache.kafka.connect.json.JsonConverter
+    key.converter.schemas.enable: false
+    value.converter.schemas.enable: false
+
+    # The value must be set lower than session.timeout.ms
+    heartbeat.interval.ms: 5000
+
+    rebalance.timeout.ms: 60000
+
+    session.timeout.ms: 10000
+
+  resources:
+    requests:
+      cpu: 2
+      memory: 6Gi
+    limits:
+      cpu: 4
+      memory: 8Gi
+
+  jvmOptions:
+    -Xms: 3g
+    -Xmx: 3g
+
+  logging:
+    # only: inline | external
+    type: inline 
+    loggers:
+      connect.root.logger.level: INFO
+
+  # Build a custom image with connector plugins (Debezium, JDBC, S3, ...).
+  # Requires Strimzi Cluster Operator with Kaniko/Buildah support.
+  # docs: https://strimzi.io/docs/operators/latest/configuring.html#type-Build-reference
+  # Build a custom image with connector plugins (Debezium, JDBC, S3, ...).
+  #
+  # build:
+  #   # 80.1. Configuring container registries
+  #   # docs: https://strimzi.io/docs/operators/latest/configuring.html#configuring_container_registries
+  #   output:
+  #     # supports: docker | imagestream
+  #     type: docker
+  #     image: dockerhub.vietcredit.com.vn/dwh/kafka-connect:4.2.0-debezium
+  #     # use docker-registry k8s secrets with kubernetes.io/dockerconfigjson
+  #     # docs: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/#registry-secret-existing-credentials
+  #     pushSecret: dockerhub-regcred
+
+  #   # 80.2. Configuring connector plugins
+  #   # docs: https://strimzi.io/docs/operators/latest/configuring.html#configuring_connector_plugins
+  #   # Connector plugins are a set of files that define the implementation required to connect to certain types of external system
+  #   plugins:
+  #     - name: debezium-postgres
+  #       artifacts:
+  #         - type: tgz
+  #           url: https://repo1.maven.org/maven2/io/debezium/debezium-connector-postgres/3.0.8.Final/debezium-connector-postgres-3.0.8.Final-plugin.tar.gz
+
+  # Mount pre-built connector plugins from ConfigMap/Secret/EmptyDir.
+  # 89. MountedPlugin schema reference
+  # docs: https://strimzi.io/docs/operators/latest/configuring.html#type-MountedPlugin-reference
+  # plugins: 
+  #   - name: debezium-postgres
+  #     artifacts:
+  #       - type: image
+  #         reference: dockerhub.../debezium-postgres-plugin:3.0.8
+  #   - name: confluent-s3
+  #     artifacts:
+  #       - type: image
+  #         reference: dockerhub.../confluent-s3-plugin:11.0.7
+  
+  template:
+    pod:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    strimzi.io/cluster: "{{ .Values.clusterName }}"
+                    strimzi.io/kind: KafkaConnect
+                topologyKey: kubernetes.io/hostname
+
+# KafkaConnector CRs. Requires connect.useConnectorResources: true.
+# 122. KafkaConnector schema reference
+# docs: https://strimzi.io/docs/operators/latest/configuring.html#type-KafkaConnector-reference
+# CONVENTION:
+#   name: metadata resource name (DNS-safe)
+#   connector.class: fully qualified connector class
+connectors:
+  - name: s3-sink
+    # the Class for the Kafka Connector. read README.md
+    class: io.confluent.connect.s3.S3SinkConnector
+    # The maximum number of tasks for the Kafka Connector.
+    tasksMax: 6
+    config:
+      topics.regex: "cdc\\..*"
+      s3.bucket.name: dp-prod-raw
+      s3.part.size: '5242880'
+      flush.size: '1000'
+      store.url: https://minio.example.com
+      behavior.on.null.values: ignore
+      storage.class: io.confluent.connect.s3.storage.S3Storage
+      format.class: io.confluent.connect.s3.format.json.JsonFormat
+      partitioner.class: io.confluent.connect.storage.partitioner.TimeBasedPartitioner
+      path.format: 'year=YYYY/month=MM/day=dd/hour=HH'
+      timestamp.extractor: RecordField
+      timestamp.field: timestamp

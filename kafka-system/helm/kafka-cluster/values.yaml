@@ -180,14 +180,26 @@ brokers:
 
 # 97. KafkaUser schema reference
 # doc: https://strimzi.io/docs/operators/latest/configuring.html#type-KafkaUser-reference
-# 98. KafkaUserSpec schema reference
-# doc: https://strimzi.io/docs/operators/latest/configuring.html#type-KafkaUserSpec-reference
+# authentication.type: tls | scram-sha-512 | tls-external  
+# authorization.type: simple
+#
 # 103. KafkaUserAuthorizationSimple schema reference
 # doc: https://strimzi.io/docs/operators/latest/configuring.html#type-KafkaUserAuthorizationSimple-reference
+#
+# 104. AclRule schema reference
+# doc: https://strimzi.io/docs/operators/latest/configuring.html#type-AclRule-reference
+# resource.type: topic | group | cluster | transactionalId
+# resource.patternType: literal | prefix
+# literal: names are taken exactly as they are specified in the name field. 
+# if set * to indicate that the rule applies to all resources.
+#
+# type: [allow, deny] default: allow
+# operations: Read, Write, Create, Delete, Alter, Describe, ClusterAction, AlterConfigs, DescribeConfigs, IdempotentWrite and All.
+#
+# users: admin, ui (Kafka-UI), connect (Kafka-Connect)
 users:
   - name: admin
     authentication:
-      # supported: tls | scram-sha-512 | tls-external                        - 
       type: scram-sha-512
 
   # user for Kafka-UI
@@ -195,16 +207,7 @@ users:
     authentication:
       type: scram-sha-512
     authorization:
-      # Must be simple.
       type: simple
-
-      # 104. AclRule schema reference
-      # doc: https://strimzi.io/docs/operators/latest/configuring.html#type-AclRule-reference
-      # resource.type: topic | group | cluster | transactionalId
-      # resource.patternType: literal | prefix
-      # literal: names are taken exactly as they are specified in the name field. if set * to indicate that the rule applies to all resources.
-      # type: [allow, deny] default: allow
-      # operations: Read, Write, Create, Delete, Alter, Describe, ClusterAction, AlterConfigs, DescribeConfigs, IdempotentWrite and All.
       acls:
         # --- Cluster metadata & config ---
         - resource:
@@ -244,4 +247,44 @@ users:
             - Describe
             - Delete
             - Alter  # reset offset
+          host: "*"
+
+  # user for KafkaConnect
+  - name: connect
+    authentication:
+      type: scram-sha-512
+    authorization:
+      type: simple
+      acls:
+        - resource:
+            type: cluster
+          operations:
+            - Describe
+            - DescribeConfigs
+            - IdempotentWrite # pub message
+          host: "*"
+          
+        # Internal topics Connect
+        - resource:
+            type: topic
+            name: "*"
+            patternType: literal
+          operations:
+            - Read
+            - Write
+            - Create
+            - Describe
+            - Alter
+            - AlterConfigs
+          host: "*"
+          
+        # --- Consumer groups ---
+        - resource:
+            type: group
+            name: "*"
+            patternType: literal
+          operations:
+            - Read
+            - Describe
+            - Alter
           host: "*"

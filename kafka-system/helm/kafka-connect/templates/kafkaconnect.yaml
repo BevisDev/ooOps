@@ -1,0 +1,78 @@
+{{- if .Values.connect.enabled }}
+{{- $root := . }}
+{{- with .Values.connect }}
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaConnect
+metadata:
+  name: {{ include "connect.clusterName" $root }}
+  labels:
+    {{- include "connect.labels" $root | nindent 4 }}
+    {{- with .metadata.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  annotations:
+    {{- if .useConnectorResources }}
+    strimzi.io/use-connector-resources: "true"
+    {{- end }}
+    {{- with .metadata.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  version: {{ .version | quote }}
+  replicas: {{ .replicas }}
+  bootstrapServers: {{ include "connect.bootstrapServers" $root | quote }}
+  groupId: {{ .groupId | default (printf "connect-%s" .name) | quote }}
+  configStorageTopic: {{ .configStorageTopic | default (printf "connect-%s-configs" .name) | quote }}
+  offsetStorageTopic: {{ .offsetStorageTopic | default (printf "connect-%s-offsets" .name) | quote }}
+  statusStorageTopic: {{ .statusStorageTopic | default (printf "connect-%s-status" .name) | quote }}
+  {{- with $root.Values.imagePullSecrets }}
+  imagePullSecrets:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .image }}
+  image: {{ . | quote }}
+  {{- end }}
+  {{- with .authentication }}
+  authentication:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  config:
+    {{- toYaml .config | nindent 4 }}
+  {{- with .resources }}
+  resources:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .jvmOptions }}
+  jvmOptions:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .logging }}
+  logging:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .build }}
+  build:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .plugins }}
+  plugins:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .metricsConfig }}
+  metricsConfig:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .rack }}
+  rack:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .template }}
+  template:
+    {{- tpl (toYaml .) $root | nindent 4 }}
+  {{- end }}
+{{- end }}
+{{- end -}}
