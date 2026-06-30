@@ -13,11 +13,14 @@ defaultImageRegistry: quay.io
 defaultImageRepository: strimzi
 defaultImageTag: 1.0.1
 
+revisionHistoryLimit: 3
+
 image:
   registry: ""
   repository: ""
   name: operator
   tag: ""
+  imagePullPolicy: IfNotPresent
   # imagePullSecrets:
   #   - name: secretname
 logVolume: co-config-volume

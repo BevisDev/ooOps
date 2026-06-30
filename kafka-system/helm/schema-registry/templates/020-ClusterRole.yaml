@@ -1,6 +1,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
+  name: apicurio-registry-operator-clusterrole
   labels:
     app: apicurio-registry-operator
     app.kubernetes.io/component: operator
@@ -8,7 +9,6 @@ metadata:
     app.kubernetes.io/name: apicurio-registry-operator
     app.kubernetes.io/part-of: apicurio-registry
     app.kubernetes.io/version: 3.3.0
-  name: apicurio-registry-operator-clusterrole
 rules:
 - apiGroups:
   - registry.apicur.io

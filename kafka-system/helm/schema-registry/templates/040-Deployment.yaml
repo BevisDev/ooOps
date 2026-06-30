@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/part-of: apicurio-registry
     app.kubernetes.io/version: 3.3.0
 spec:
-  replicas: 1
+  replicas: {{ .Values.replicas }}
   selector:
     matchLabels:
       app: apicurio-registry-operator
@@ -30,6 +30,10 @@ spec:
         app.kubernetes.io/part-of: apicurio-registry
         app.kubernetes.io/version: 3.3.0
     spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
       - env:
         - name: POD_NAME
@@ -47,13 +51,13 @@ spec:
         - name: QUARKUS_PROFILE
           value: prod
         - name: REGISTRY_APP_IMAGE
-          value: quay.io/apicurio/apicurio-registry:3.3.0
+          value: {{ include "sr.image" (dict "registry" .Values.imageRegistry "repository" .Values.imageRepository "name" .Values.app.name "tag" .Values.app.tag) }}
         - name: REGISTRY_UI_IMAGE
-          value: quay.io/apicurio/apicurio-registry-ui:3.3.0
+          value: {{ include "sr.image" (dict "registry" .Values.imageRegistry "repository" .Values.imageRepository "name" .Values.ui.name "tag" .Values.ui.tag) }}
         - name: REGISTRY_GITOPS_SYNC_IMAGE
-          value: quay.io/apicurio/apicurio-registry-gitops-sync:3.3.0
-        image: quay.io/apicurio/apicurio-registry-3-operator:3.3.0
-        imagePullPolicy: Always
+          value: {{ include "sr.image" (dict "registry" .Values.imageRegistry "repository" .Values.imageRepository "name" .Values.gitops.name "tag" .Values.gitops.tag) }}
+        image: {{ include "sr.image" (dict "registry" .Values.imageRegistry "repository" .Values.imageRepository "name" .Values.operator.image.name "tag" .Values.operator.image.tag) }}
+        imagePullPolicy: {{ .Values.imagePullPolicy }}
         livenessProbe:
           failureThreshold: 3
           httpGet:

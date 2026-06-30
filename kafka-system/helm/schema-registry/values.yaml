@@ -1,4 +1,23 @@
-image:
-  operator: quay.io/apicurio/apicurio-registry-3-operator:3.3.0
-  app: quay.io/apicurio/apicurio-registry:3.3.0
-  ui: quay.io/apicurio/apicurio-registry-ui:3.3.0
+imageRegistry: quay.io
+imageRepository: apicurio
+imagePullSecrets:
+  - name: dockerhub-regcred
+
+operator:
+  replicas: 1
+  image:
+    name: apicurio-registry-3-operator
+    tag: "3.3.0"
+    
+app:
+  name: apicurio-registry
+  tag: "3.3.0"
+ui:
+  name: apicurio-registry-ui
+  tag: "3.3.0"
+gitops:
+  name: apicurio-registry-gitops-sync
+  tag: "3.3.0"
+
+serviceAccount:
+  name: "apicurio-registry-operator"
