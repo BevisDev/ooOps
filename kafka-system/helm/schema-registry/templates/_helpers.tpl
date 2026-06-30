@@ -12,7 +12,7 @@ Expand the name of the chart.
 {{/*
  commons labels
 */}}
-{{- define "sr.labels" }}
+{{- define "sr.labels" -}}
 app: apicurio-registry-operator
 app.kubernetes.io/component: operator
 helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}

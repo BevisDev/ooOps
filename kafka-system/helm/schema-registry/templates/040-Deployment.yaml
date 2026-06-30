@@ -1,34 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: apicurio-registry-operator-v3.3.0
+  name: {{ include "sr.name" . }}-deployment
   namespace: {{ .Release.Namespace }}
   labels:
-    app: apicurio-registry-operator
-    app.kubernetes.io/component: operator
-    app.kubernetes.io/instance: apicurio-registry-operator
-    app.kubernetes.io/name: apicurio-registry-operator
-    app.kubernetes.io/part-of: apicurio-registry
-    app.kubernetes.io/version: 3.3.0
+    {{- include "sr.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.operator.replicas }}
   selector:
     matchLabels:
-      app: apicurio-registry-operator
-      app.kubernetes.io/component: operator
-      app.kubernetes.io/instance: apicurio-registry-operator
-      app.kubernetes.io/name: apicurio-registry-operator
-      app.kubernetes.io/part-of: apicurio-registry
-      app.kubernetes.io/version: 3.3.0
+      {{- include "sr.labels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        app: apicurio-registry-operator
-        app.kubernetes.io/component: operator
-        app.kubernetes.io/instance: apicurio-registry-operator
-        app.kubernetes.io/name: apicurio-registry-operator
-        app.kubernetes.io/part-of: apicurio-registry
-        app.kubernetes.io/version: 3.3.0
+        {{- include "sr.labels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -96,4 +81,4 @@ spec:
           initialDelaySeconds: 20
           periodSeconds: 5
           timeoutSeconds: 3
-      serviceAccountName: apicurio-registry-operator
+      serviceAccountName: {{ include "sr.name" . }}-sa
