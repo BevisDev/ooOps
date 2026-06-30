@@ -288,3 +288,20 @@ users:
             - Describe
             - Alter
           host: "*"
+
+# KafkTopic
+# Docs: https://strimzi.io/docs/operators/latest/configuring.html#type-KafkaTopic-reference
+# name: metadata resources
+# topicName: name of topics
+# partitions: number of partitions
+# config (optional): docs: https://kafka.apache.org/41/configuration/topic-configs/
+# ---
+# CONVENTION: 
+# domain.entity.variant
+# domain: business
+# entity: orders, customers
+# variant (optional): env, version: v1, raw, prod
+topics:
+  - name: cdc-order-topics
+    topicName: cdc.orders
+    partitions: 4

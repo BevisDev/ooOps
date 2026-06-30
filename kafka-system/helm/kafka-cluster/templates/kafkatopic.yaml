@@ -12,9 +12,7 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  {{- with .topicName }}
-  topicName: {{ . | quote }}
-  {{- end }}
+  topicName: {{ required "topicName is required" .topicName | quote }}
   {{- with .partitions }}
   partitions: {{ . }}
   {{- end }}
