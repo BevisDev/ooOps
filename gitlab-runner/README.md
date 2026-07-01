@@ -5,6 +5,7 @@
 ## Images
 
 1. registry.gitlab.com/gitlab-org/gitlab-runner:alpine-v19.1.1
+OR registry.gitlab.com/gitlab-org/gitlab-runner:ubuntu-v19.1.1
 
 ## Document
 

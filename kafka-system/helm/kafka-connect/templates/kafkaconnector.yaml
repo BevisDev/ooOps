@@ -29,4 +29,3 @@ spec:
     {{- required "connector.config is required" .config | toYaml | nindent 4 }}
 {{- end }}
 {{- end }}
-{{- end }}
